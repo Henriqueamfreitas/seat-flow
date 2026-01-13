@@ -1,0 +1,80 @@
+services:
+  user-service:
+    build:
+      context: './user-service'
+      dockerfile: Dockerfile
+    image: henriqueannicchino/node
+    container_name: seat_flow_user
+    networks:
+      - nodenet
+    volumes:
+      - './user-service:/app'
+      - /app/node_modules
+    tty: true 
+  
+  auth-service:
+    build:
+      context: './auth-service'
+      dockerfile: Dockerfile
+    image: henriqueannicchino/node
+    container_name: seat_flow_auth
+    networks:
+      - nodenet
+    volumes:
+      - './auth-service:/app'
+      - /app/node_modules
+    tty: true 
+
+  queue-service:
+    build:
+      context: './queue-service'
+      dockerfile: Dockerfile
+    image: henriqueannicchino/node
+    container_name: seat_flow_queue
+    networks:
+      - nodenet
+    volumes:
+      - './queue-service:/app'
+      - /app/node_modules
+    tty: true 
+
+  reservation-service:
+    build:
+      context: './reservation-service'
+      dockerfile: Dockerfile
+    image: henriqueannicchino/node
+    container_name: seat_flow_reservation
+    networks:
+      - nodenet
+    volumes:
+      - './reservation-service:/app'
+      - /app/node_modules
+    tty: true 
+
+  seat-service:
+    build:
+      context: './seat-service'
+      dockerfile: Dockerfile
+    image: henriqueannicchino/node
+    container_name: seat_flow_seat
+    networks:
+      - nodenet
+    volumes:
+      - './seat-service:/app'
+      - /app/node_modules
+    tty: true 
+
+  nginx:
+    build:
+      context: './nginx'
+      dockerfile: Dockerfile
+    image: henriqueannicchino/nginx
+    container_name: nginx_seat_flow
+    networks:
+      - nodenet
+    ports:
+      - "8080:80"
+
+networks:
+  nodenet:
+    driver: bridge
