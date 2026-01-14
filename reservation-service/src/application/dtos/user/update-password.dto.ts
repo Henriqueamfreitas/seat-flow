@@ -1,4 +1,4 @@
-import { SafeUser } from "../../../domain/entities/user";
+import { SafeUser } from "../../../domain/entities/reservation.entity";
 import { PaginatedResponseDTO } from "../pagination/paginated-response.dto";
 
 export interface IUpdatePasswordInputDTO {

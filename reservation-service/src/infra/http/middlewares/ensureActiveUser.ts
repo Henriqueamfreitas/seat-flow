@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { UserRepository } from "../../db/typeorm/repositories/user.repository";
+import { UserRepository } from "../../db/typeorm/repositories/reservation.repository";
 import { AppError } from "../../../shared/errors/AppError";
 
 export async function ensureActiveUser(

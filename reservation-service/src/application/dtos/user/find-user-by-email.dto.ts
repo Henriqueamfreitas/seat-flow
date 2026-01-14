@@ -1,4 +1,4 @@
-import { SafeUser } from "../../../domain/entities/user";
+import { SafeUser } from "../../../domain/entities/reservation.entity";
 
 export interface IFindUserByEmailInputDTO {
   email: string;
