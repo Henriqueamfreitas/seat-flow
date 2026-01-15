@@ -6,17 +6,13 @@ import { ReservationEntity } from "../entities/reservation.entity";
 import { ReservationMapper } from "../mappers/reservation.mapper";
 
 export class ReservationRepository
-  implements IReservationRepository
-{
+  implements IReservationRepository {
   private repo = AppDataSource.getRepository(ReservationEntity);
 
   async create(data: Reservation): Promise<Reservation> {
-    console.log(4444, data)
     const orm = ReservationMapper.toOrm(data);
-    console.log(55555)
 
     const saved = await this.repo.save(orm);
-    console.log(66666)
 
     return ReservationMapper.toDomain(saved);
   }
@@ -29,7 +25,7 @@ export class ReservationRepository
     return found ? ReservationMapper.toDomain(found) : null;
   }
 
-  async findById(id: string): Promise<Reservation | null> {
+  async findById(id: number): Promise<Reservation | null> {
     const found = await this.repo.findOne({
       where: { id: Number(id) },
     });
@@ -41,5 +37,20 @@ export class ReservationRepository
     const orm = ReservationMapper.toOrm(reservation);
     const saved = await this.repo.save(orm);
     return ReservationMapper.toDomain(saved);
+  }
+  
+  async list(filters: { userId?: string; status?: string }) {
+    const qb = this.repo.createQueryBuilder("r");
+
+    if (filters.userId) {
+      qb.andWhere("r.userId = :userId", { userId: filters.userId });
+    }
+
+    if (filters.status) {
+      qb.andWhere("r.status = :status", { status: filters.status });
+    }
+
+    const result = await qb.getMany();
+    return result.map(ReservationMapper.toDomain);
   }
 }

@@ -14,7 +14,7 @@ export class Reservation {
   expiresAt!: Date;
   createdAt!: Date;
 
-  private constructor() {}
+  private constructor() { }
 
   static create(props: {
     seatId: number;
@@ -40,6 +40,14 @@ export class Reservation {
 
     return reservation;
   }
+  
+  cancel() {
+    if (this.status !== ReservationStatus.ACTIVE) {
+      throw new Error("Only active reservations can be cancelled");
+    }
+
+    this.status = ReservationStatus.CANCELED;
+  }
 
   isExpired(): boolean {
     return new Date() > this.expiresAt;
@@ -49,3 +57,5 @@ export class Reservation {
     this.status = ReservationStatus.EXPIRED;
   }
 }
+
+
