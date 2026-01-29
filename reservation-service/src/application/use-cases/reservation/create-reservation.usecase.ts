@@ -1,6 +1,7 @@
 import { Reservation } from "../../../domain/entities/reservation.entity";
 import { IReservationRepository } from "../../../domain/repositories/reservation.repository";
-import { SeatServiceClient } from "../../../infra/http/clients/seat-service.client";
+import { QueueServiceClient } from "../../../infra/http/clients/queue-service.client";
+import { ReservationPublisher } from "../../../infra/queue/reservation.publisher";
 
 interface IRequest {
   seatId: number;
@@ -11,21 +12,31 @@ interface IRequest {
 export class CreateReservationUseCase {
   constructor(
     private reservationRepo: IReservationRepository,
-    private seatService: SeatServiceClient
-  ) {}
+  ) { }
 
   async execute({ seatId, userId, expiresAt }: IRequest): Promise<Reservation> {
-    // 1️⃣ Reserve seat in Seat Service
-    await this.seatService.reserveSeat(seatId);
-
-    // 2️⃣ Create domain entity
+    // 1️⃣ Create reservation
     const reservation = Reservation.create({
       seatId,
       userId,
       expiresAt,
     });
 
-    // 3️⃣ Persist entity
-    return await this.reservationRepo.create(reservation);
+    // 2️⃣ Persist
+    const saved = await this.reservationRepo.create(reservation);
+
+    // 3️⃣ Emit event
+    try {
+      await ReservationPublisher.reservationCreated({
+        reservationId: saved.id,
+        seatId: saved.seatId,
+        userId: saved.userId,
+        expiresAt: saved.expiresAt,
+      });
+    } catch (err) {
+      console.error("Failed to publish reservation.created", err);
+    }
+
+    return saved;
   }
 }

@@ -21,12 +21,15 @@ export class Reservation {
     userId: string;
     expiresAt: Date;
   }): Reservation {
+    if (props.expiresAt <= new Date()) {
+      throw new Error("Expiration date must be in the future");
+    }
     const reservation = new Reservation();
 
     reservation.seatId = props.seatId;
     reservation.userId = props.userId;
     reservation.expiresAt = props.expiresAt;
-    reservation.status = ReservationStatus.ACTIVE;
+    reservation.status = ReservationStatus.PENDING;
     reservation.createdAt = new Date();
 
     return reservation;
@@ -40,13 +43,14 @@ export class Reservation {
 
     return reservation;
   }
-  
+
   cancel() {
-    if (this.status !== ReservationStatus.ACTIVE) {
-      throw new Error("Only active reservations can be cancelled");
+    if (![ReservationStatus.ACTIVE, ReservationStatus.PENDING].includes(this.status)) {
+      throw new Error("Only active or pending reservations can be cancelled");
     }
 
-    this.status = ReservationStatus.CANCELED;
+
+    this.status = ReservationStatus.CANECELLED;
   }
 
   isExpired(): boolean {
@@ -54,8 +58,24 @@ export class Reservation {
   }
 
   expire() {
+    if (this.status !== ReservationStatus.PENDING) return;
     this.status = ReservationStatus.EXPIRED;
   }
+
+  activate() {
+    if (this.status !== ReservationStatus.PENDING) {
+      throw new Error("Only pending reservations can be activated");
+    }
+    this.status = ReservationStatus.ACTIVE;
+  }
+
+  reject() {
+    if (this.status !== ReservationStatus.PENDING) {
+      throw new Error("Only pending reservations can be rejected");
+    }
+    this.status = ReservationStatus.REJECTED;
+  }
+
 }
 
 
