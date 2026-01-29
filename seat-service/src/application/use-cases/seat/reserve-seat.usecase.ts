@@ -5,7 +5,9 @@ export class ReserveSeatUseCase {
   constructor(private repo: ISeatRepository) {}
 
   async execute(seatId: number) {
+    console.log(11111)
     const seat = await this.repo.findById(seatId);
+    console.log(11111 * 2, seat)
 
     if (!seat || seat.status !== "FREE") {
       throw new Error("Seat not available");
