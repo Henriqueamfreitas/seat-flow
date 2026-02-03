@@ -1,9 +1,8 @@
-import { ConsumeMessage } from "amqplib";
-import { RabbitMQConnection } from "./rabbitmq.connection";
 import { SeatRepository } from "../../db/typeorm/repositories/seat.repository";
+import { RabbitMQConnection } from "./rabbitmq.connection";
 import { SeatEventsPublisher } from "./seat-events.publisher";
 
-interface ReservationCreatedPayload {
+interface ReservationCreatedEvent {
   reservationId: number;
   seatId: number;
   userId: string;
@@ -13,60 +12,69 @@ interface ReservationCreatedPayload {
 export async function reservationCreatedConsumer() {
   const channel = await RabbitMQConnection.getChannel();
 
-  await channel.assertExchange("reservation", "topic", { durable: true });
-
-  const queue = await channel.assertQueue("seat.reservation.created", {
+  // 1. Exchange
+  await channel.assertExchange("reservation", "topic", {
     durable: true,
   });
 
-  await channel.bindQueue(queue.queue, "reservation", "reservation.created");
+  // 2. Queue (seat service specific)
+  const queueName = "seat.reservation.created";
 
-  console.log("👂 Seat Service listening to reservation.created");
+  const queue = await channel.assertQueue(queueName, {
+    durable: true,
+  });
 
-  const seatRepository = new SeatRepository();
+  // 3. Bind queue to exchange
+  await channel.bindQueue(
+    queue.queue,
+    "reservation",
+    "reservation.created"
+  );
 
-  channel.consume(queue.queue, async (msg: ConsumeMessage | null) => {
+  console.log("👂 Seat service listening for reservation.created");
+
+  // 4. Consume messages
+  await channel.consume(queue.queue, async (msg) => {
     if (!msg) return;
 
     try {
-      const payload: ReservationCreatedPayload = JSON.parse(
+      const content = JSON.parse(
         msg.content.toString()
-      );
+      ) as ReservationCreatedEvent;
 
-      const seat = await seatRepository.findById(payload.seatId);
+      console.log("📩 Received reservation.created", content);
 
-      if (!seat) {
-        await SeatEventsPublisher.reservationRejected({
-          reservationId: payload.reservationId,
-          reason: "SEAT_NOT_FOUND",
+      // 5. Business logic (example)
+      // const seatOcuppied = await checkSeatAvailability(content.seatId);
+      const seatRepository = new SeatRepository();
+      const seatOcuppied = await seatRepository.findById(content.seatId)
+
+      if (!seatOcuppied) {
+        await SeatEventsPublisher.reservationApproved({
+          reservationId: content.reservationId,
+          seatId: content.seatId,
         });
-
-        channel.ack(msg);
-        return;
+      } else {
+        await SeatEventsPublisher.reservationRejected({
+          reservationId: content.reservationId,
+          seatId: content.seatId,
+          reason: "Seat already reserved",
+        });
       }
 
-      if (seat.status !== "FREE") {
-        await SeatEventsPublisher.reservationRejected({
-          reservationId: payload.reservationId,
-          reason: "SEAT_ALREADY_RESERVED",
-        });
-
-        channel.ack(msg);
-        return;
-      }
-
-      seat.status = "RESERVED";
-      await seatRepository.save(seat);
-
-      await SeatEventsPublisher.reservationApproved({
-        reservationId: payload.reservationId,
-        seatId: seat.id,
-      });
-
+      // 6. ACK message
       channel.ack(msg);
     } catch (error) {
       console.error("❌ Error processing reservation.created", error);
-      // no ack → message can be retried / DLQ
+
+      // Optional: send to DLQ later
+      channel.nack(msg, false, false);
     }
   });
+}
+
+// Mock logic for now
+async function checkSeatAvailability(seatId: number): Promise<boolean> {
+  // later: DB check / lock / transaction
+  return Math.random() > 0.3;
 }
