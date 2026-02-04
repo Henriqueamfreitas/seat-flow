@@ -5,4 +5,5 @@ export interface ISeatRepository {
   findAll(): Promise<Seat[]>;
   findById(id: number): Promise<Seat | null>;
   save(seat: Seat): Promise<Seat>;
+  reserveSeatIfFree(seatId: number): Promise<boolean>;
 }

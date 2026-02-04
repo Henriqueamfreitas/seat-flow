@@ -8,5 +8,6 @@ export interface IReservationRepository {
   list(filters: {
     userId?: string;
     status?: string;
-  }): Promise<Reservation[]>
+  }): Promise<Reservation[]>;
+  updateById(id: number, payload: Partial<Reservation>): Promise<"ok" | null>;
 }

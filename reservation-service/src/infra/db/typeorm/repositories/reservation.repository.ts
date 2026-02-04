@@ -38,7 +38,7 @@ export class ReservationRepository
     const saved = await this.repo.save(orm);
     return ReservationMapper.toDomain(saved);
   }
-  
+
   async list(filters: { userId?: string; status?: string }) {
     const qb = this.repo.createQueryBuilder("r");
 
@@ -52,5 +52,17 @@ export class ReservationRepository
 
     const result = await qb.getMany();
     return result.map(ReservationMapper.toDomain);
+  }
+
+  async updateById(id: number, payload: Partial<Reservation>) {
+    const found = await this.repo.findOne({
+      where: { id: Number(id) },
+    });
+    console.log('entered update')
+
+    if (!found) return null
+
+    await this.repo.update(id, payload)
+    return 'ok'
   }
 }

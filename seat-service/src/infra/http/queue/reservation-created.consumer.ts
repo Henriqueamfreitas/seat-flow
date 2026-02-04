@@ -1,3 +1,4 @@
+import { SeatStatus } from "../../../domain/enums/seat-status.enum";
 import { SeatRepository } from "../../db/typeorm/repositories/seat.repository";
 import { RabbitMQConnection } from "./rabbitmq.connection";
 import { SeatEventsPublisher } from "./seat-events.publisher";
@@ -47,9 +48,9 @@ export async function reservationCreatedConsumer() {
       // 5. Business logic (example)
       // const seatOcuppied = await checkSeatAvailability(content.seatId);
       const seatRepository = new SeatRepository();
-      const seatOcuppied = await seatRepository.findById(content.seatId)
+      const seatReserved = await seatRepository.reserveSeatIfFree(content.seatId);
 
-      if (!seatOcuppied) {
+      if (seatReserved) {
         await SeatEventsPublisher.reservationApproved({
           reservationId: content.reservationId,
           seatId: content.seatId,
@@ -61,6 +62,9 @@ export async function reservationCreatedConsumer() {
           reason: "Seat already reserved",
         });
       }
+
+
+
 
       // 6. ACK message
       channel.ack(msg);
